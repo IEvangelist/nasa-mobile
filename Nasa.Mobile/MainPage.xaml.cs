@@ -2,31 +2,31 @@
 
 namespace Nasa.Mobile;
 
-public partial class MainPage : ContentPage
+public sealed partial class MainPage : ContentPage, IDisposable
 {
+    private readonly ApodClient _client = null!;
+
     public readonly DateTime MinDate = new(1995, 6, 20);
     public readonly DateTime MaxDate = DateTime.Today;
 
-    DateTime _selectedDate = DateTime.Today;
-    public DateTime SelectedDate
-    {
-        get => _selectedDate;
-        set => _selectedDate = value;
-    }
+    public DateTime SelectedDate { get; set; } = DateTime.Today;
 
-    public MainPage() => InitializeComponent();
+    public MainPage()
+    {
+        InitializeComponent();
+        _client = Handler.MauiContext.Services.GetRequiredService<ApodClient>();
+    }
 
     private async void OnCounterClicked(object sender, EventArgs e)
     {
-        using var client = new ApodClient(
-            Environment.GetEnvironmentVariable("NasaApiOptions__ApiKey"));
-
-        var response = await client.FetchApodAsync(1);
+        var response = await _client.FetchApodAsync(1);
         if (response is { StatusCode: ApodStatusCode.OK })
         {
             _image.Source = response.Content.ContentUrlHD;
             SemanticScreenReader.Announce(response.Content.Explanation);
         }
     }
+
+    void IDisposable.Dispose() => _client?.Dispose();
 }
 
